@@ -12,7 +12,7 @@ void mmul2(float A[ni][nk], float B[nk][nj], float C[ni][nj])
 	// create blocks for improvement
 	int ib = 128;
 	int kb = 128;
-	#pragma omp parallel for private (i, j, k)
+	#pragma omp parallel for private (i, j, k, acc00, acc01, acc10, acc11)
 	for (ii = 0; ii < ni; ii += ib)
 	{
 	    for (kk = 0; kk < nk; kk += kb)
