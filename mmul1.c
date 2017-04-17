@@ -2,7 +2,7 @@
 #include <omp.h>
 
 void mmul1(float A[ni][nk], float B[nk][nj], float C[ni][nj])
-{	
+{
 	int i, j, k;
 	#pragma omp parallel private(i, j, k) shared(A, B, C)
 	{
@@ -16,4 +16,3 @@ void mmul1(float A[ni][nk], float B[nk][nj], float C[ni][nj])
 	}
 	}
 }
-
