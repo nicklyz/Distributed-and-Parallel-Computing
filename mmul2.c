@@ -6,12 +6,13 @@
 void mmul2(float A[ni][nk], float B[nk][nj], float C[ni][nj])
 {
 	int i, j, k, ii, jj, kk;
-	float tmp, acc00, acc01, acc10, acc11;
+	float acc00, acc01, acc10, acc11;
 	// prefill Matrix C with 0s
 	memset(C, 0, sizeof(C[0][0]) * ni * nj);
 	// create blocks for improvement
-	int ib = 8;
-	int kb = 8;
+	int ib = 128;
+	int kb = 128;
+	#pragma omp parallel for private (i, j, k)
 	for (ii = 0; ii < ni; ii += ib)
 	{
 	    for (kk = 0; kk < nk; kk += kb)
@@ -20,7 +21,9 @@ void mmul2(float A[ni][nk], float B[nk][nj], float C[ni][nj])
 	        {
 	            for(i = ii; i < ii + ib; i += 2 )
 	            {
-	                if (kk == 0)
+			        #pragma omp critical
+	                {
+                    if (kk == 0)
 	                    acc00 = acc01 = acc10 = acc11 = 0;
 	                else
 	                {
@@ -40,6 +43,7 @@ void mmul2(float A[ni][nk], float B[nk][nj], float C[ni][nj])
 	                C[i + 0][j + 1] = acc01;
 	                C[i + 1][j + 0] = acc10;
 	                C[i + 1][j + 1] = acc11;
+			        }
 	            }
 	        }
 	    }
