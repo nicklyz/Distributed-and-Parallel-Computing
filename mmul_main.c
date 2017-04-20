@@ -65,17 +65,17 @@ int main(int argc, char** argv) {
 	}
 
 	// 
-  // serial computation
-  //
+	// serial computation
+	//
 	printf("Running sequential multiplication\n");
 
-  gettimeofday(&ts, NULL);
+	gettimeofday(&ts, NULL);
 	mmul0(A, B, Cans);
 	gettimeofday(&te, NULL);
-  timersub(&ts, &te, &td);
+	timersub(&ts, &te, &td);
 	tser = fabs(td.tv_sec+(float)td.tv_usec/1000000.0);
-  printf("Time : %.2f sec \n\n", tser );
-
+	printf("Time : %.2f sec \n\n", tser );
+	
 	//
 	// mmul1 computation
 	//
@@ -85,29 +85,28 @@ int main(int argc, char** argv) {
 	gettimeofday(&te, NULL);
 	timersub(&ts, &te, &td);
 	tpar = fabs(td.tv_sec+(float)td.tv_usec/1000000.0);
-    
+
 	// compare results
 	diff = compute_diff(C, Cans);
-  printf("Time : %.2f sec \n", tpar);
+	printf("Time : %.2f sec \n", tpar);
 	printf("Performance : %.2f GFlop/s (%.1fX)\n", 2.0*ni*nj*nk/tpar/1000000000, tser/tpar );
-  printf("Result Diff : %.3f\n\n", diff );
+	printf("Result Diff : %.3f\n\n", diff );
 	
-
-  //
-  // mmul2 computation
-  // 
-  printf("Running blocked parallel multiplication (mmul2)\n");
+	//
+	// mmul2 computation
+	//
+	printf("Running blocked parallel multiplication (mmul2)\n");
 	gettimeofday(&ts, NULL);
 	mmul2(A, B, C);
 	gettimeofday(&te, NULL);
 	timersub(&ts, &te, &td);
 	tpar = fabs(td.tv_sec+(float)td.tv_usec/1000000.0);
-  
+	
 	// compare results
 	diff = compute_diff(C, Cans);
-  printf("Time : %.2f sec \n", tpar);
+	printf("Time : %.2f sec \n", tpar);
 	printf("Performance : %.2f GFlop/s (%.1fX)\n", 2.0*ni*nj*nk/tpar/1000000000, tser/tpar );
-  printf("Result Diff : %.3f\n", diff );
-
+	printf("Result Diff : %.3f\n", diff );
+	
 	return 0;
 }

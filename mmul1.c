@@ -1,9 +1,13 @@
 #include "const.h"
+#include "stdio.h"
+#include "string.h"
 #include <omp.h>
 
 void mmul1(float A[ni][nk], float B[nk][nj], float C[ni][nj])
 {
 	int i, j, k;
+	// set C to zero matrix
+	memset(C, 0, sizeof(C[0][0]) * ni * nj);
 	#pragma omp parallel private(i, j, k) shared(A, B, C)
 	{
 	#pragma omp for schedule(static)
