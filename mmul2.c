@@ -4,29 +4,30 @@
 #include <stdlib.h>
 #include <omp.h>
 
+#define BS 64
+
 void mmul2(float A[ni][nk], float B[nk][nj], float C[ni][nj])
 {
-	int i, j, k, ii, jj, kk;
-	// prefill Matrix C with 0s
-	memset(C, 0, sizeof(C[0][0]) * ni * nj);
-	// create blocks for improvement
-	const int BS = 64;
-	#pragma omp parallel private (i, j, k, ii, jj, kk) shared(A, B, C)
+	int i, j, k, ii, jj;
+	float buff[BS][BS];
+	#pragma omp parallel private (i, j, k, ii, jj, buff) shared(A, B, C)
 	{
 	#pragma omp for schedule(static)
-	for (i = 0; i < ni; i += BS)
-		for (j = 0; j < nj; j += BS)
+	for (i = 0; i < ni/BS; ++i)
+		for (j = 0; j < nj/BS; ++j)
 		{
-			float buff[BS][BS];
-			memset(buff, 0, sizeof(float) * BS * BS);
-			for (k = 0; k < nk; k += BS)
-				for (ii = 0; ii < BS; ++ii)
-					for (kk = 0; kk < BS; ++kk) 
-						for (jj = 0; jj < BS; ++jj) 
-							buff[ii][jj] += A[i+ii][k+kk] * B[k+kk][j+jj];
+			// initialize buffer to 0s
+			for (ii = 0; ii < BS; ++ii)
+				for (jj=0; jj<BS; ++jj) 
+					buff[ii][jj]=0;
+			for (ii = 0; ii < BS; ++ii)
+				for(k=0; k<nk; ++k) 
+					for (jj = 0; jj < BS; ++jj) 
+						buff[ii][jj] += A[i*BS+ii][k] * B[k][j*BS+jj];
 			// put buffer back to c
 			for (ii = 0; ii < BS; ++ii)
-				memcpy(&C[i+ii][j], &buff[ii][0], sizeof(float) * BS);
+				for (jj=0; jj<BS; ++jj)
+					C[i*BS+ii][j*BS+jj] = buff[ii][jj];
 		}
 	} // end pragma
 }
