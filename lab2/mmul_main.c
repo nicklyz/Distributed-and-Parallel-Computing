@@ -31,7 +31,7 @@ int compute_diff(float *C, float *Cans, int n)
 {
   int cnt = 0;
   int i, j;
-
+  
   for (i=0; i<n; i++) {
     for (j=0; j<n; j++) {
       if (fabs(C(i,j) - Cans(i,j)) > 10e-4)
@@ -52,7 +52,7 @@ int main( int argc, char** argv ) {
   int n = 1024;
   int i, j, k;
   unsigned short seed[3];
-
+  
   if( argc != 1 ){
     if( argc == 2 ){
       n = atoi(argv[1]);
@@ -62,20 +62,20 @@ int main( int argc, char** argv ) {
       exit(0);
     }
   }
-
+  
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &pnum);
   MPI_Comm_rank(MPI_COMM_WORLD, &pid);
-
+  
   if( pid == 0 ){
-    printf("Intializing matrix size : %d x %d x %d\n", n, n, n);
-
+    //printf("Intializing matrix size : %d x %d x %d\n", n, n, n);
+    
     A = (float*)malloc( sizeof(float) * n * n );
     B = (float*)malloc( sizeof(float) * n * n );
     C = (float*)malloc( sizeof(float) * n * n );
-
+    
     seed[0] = 0; seed[1] = 1; seed[2] = 2;
-
+    
     for (i=0; i<n; i++) {
       for (k=0; k<n; k++) {
         A(i,k) = (float)erand48(seed);
@@ -87,16 +87,16 @@ int main( int argc, char** argv ) {
       }
     }
   }
-
+  
   MPI_Barrier(MPI_COMM_WORLD);
   elapsed_time = -1*MPI_Wtime();
-
+  
   //Please modify the content of this function
   mmul(A, B, C, n);
-
+  
   MPI_Barrier(MPI_COMM_WORLD);
   elapsed_time += MPI_Wtime();
-
+  
   if( pid == 0 ) {
     printf("Elapsed Time : %f secs\n", elapsed_time);
     printf("Time1 Time : %f secs\n", time1);
@@ -108,10 +108,10 @@ int main( int argc, char** argv ) {
     printf("WARNING: Sequential execution has been turned off.");
     printf(" Please verify the correctness before submitting the program.\n");
     #endif
-
+  
     printf("Performance  : %.2f GFlops\n", 2.0*n*n*n/elapsed_time/1000000000 );
     printf("Result Diff  : %d\n", diff);
-
+    
     free(A);
     free(B);
     free(C);
@@ -119,8 +119,8 @@ int main( int argc, char** argv ) {
     free(Cans);
     #endif
   }
-
+  
   MPI_Finalize();
-
-  return 0;
+  
+  return 0;	
 }
