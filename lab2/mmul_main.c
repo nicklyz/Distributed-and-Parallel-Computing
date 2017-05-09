@@ -9,7 +9,7 @@
 #define C(i, j) C[i*n+j]
 #define Cans(i, j) Cans[i*n+j]
 
-void mmul(float *A, float *B, float *C, int n, int pid, int pnum);
+void mmul(float *A, float *B, float *C, int n);
 
 void mmul1(float *A, float *B, float *C, int n)
 {
@@ -92,7 +92,7 @@ int main( int argc, char** argv ) {
   elapsed_time = -1*MPI_Wtime();
 
   //Please modify the content of this function
-  mmul(A, B, C, n, pid, pnum);
+  mmul(A, B, C, n);
 
   MPI_Barrier(MPI_COMM_WORLD);
   elapsed_time += MPI_Wtime();
