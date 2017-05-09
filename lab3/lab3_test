@@ -1,0 +1,81 @@
+#!/bin/bash
+REQUIRED_FILES="lab3.pdf cnn.c kernel.cl"
+SUPPORT_FILES="/usr/local/cs133/spring17/lab3/*"
+
+# usage
+if [ $# -ne 1 ]
+then
+	echo "Usage: $0 Your_UID" 1>&2
+	exit
+fi
+ORI_DIR=`pwd`
+TMP_DIR=/tmp/${1}_tmp
+FOLDER_NAME=$1
+
+ZIP_FILE="lab3-${1}.tar.gz"
+
+# clean any existing files
+rm -rf ${TMP_DIR}
+mkdir ${TMP_DIR}
+
+if [ ! -f ${ZIP_FILE} ]; then
+    echo "ERROR: Cannot find ${ZIP_FILE}, ensure this script is put in the same directory of your ${ZIP_FILE} file. Otherwise check the tar file name" 1>&2
+    rm -rf ${TMP_DIR}
+    echo "rmd"
+    exit 1
+fi
+
+# change directory to the grading folder
+cp ${ZIP_FILE} ${TMP_DIR}
+cd ${TMP_DIR}
+
+# unzip the submission zip file 
+tar -xzf ${ZIP_FILE}
+if [ "$?" -ne "0" ]; then 
+    echo "ERROR: Cannot unzip ${ZIP_FILE} to ${TMP_DIR}"
+    rm -rf ${TMP_DIR}
+    exit 1
+fi
+
+if [ ! -d ${FOLDER_NAME} ];
+then
+	echo "Check your folder name is EXACTLY the same as UID you typed"
+	rm -rf ${TMP_DIR}
+	exit 1
+fi
+
+cd ${FOLDER_NAME}
+
+# check the existence of the required files
+for FILE in ${REQUIRED_FILES}
+do
+    if [ ! -f ${FILE} ]; then
+		echo "ERROR: Cannot find ${FILE} in the root folder of your tar file" 1>&2
+		rm -rf ${TMP_DIR}
+		exit 1
+    fi
+done
+
+# copy support files
+cp $SUPPORT_FILES .
+
+# check syntax errors
+make kernel 2> kernel_error.txt
+if [ $? -ne 0 ];
+then
+	echo "ERROR: Kernel generated failed. See kernel_error.txt"
+	mv compile_error.txt ${ORI_DIR}
+	exit 1
+fi
+
+make 2> compile_error.txt
+if [ $? -ne 0 ];
+then
+	echo "ERROR: Compile failed. See compile_error.txt"
+	mv compile_error.txt ${ORI_DIR}
+	exit 1
+fi
+
+echo "Check File Successfully. Please upload your ${ZIP_FILE} file to GradeScope."
+rm -rf ${TMP_DIR}
+exit 0
