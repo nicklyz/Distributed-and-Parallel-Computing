@@ -27,7 +27,7 @@ void mmul(float *A, float *B, float *C, int n)
 		lb = (float*) malloc( sizeof(float) * n * n);
 	}
 	// broadcast matrix lb to all processors
-	printf("%d: Sending data\n", pid);
+	// printf("%d: Sending data\n", pid);
 	// Broadcast is not scalable for larger B
 	MPI_Bcast(lb, n * n, MPI_FLOAT, 0, MPI_COMM_WORLD);
 	MPI_Scatter(A, n * n/pnum, MPI_FLOAT, la, n * n/pnum, MPI_FLOAT, 0, MPI_COMM_WORLD);
@@ -45,8 +45,10 @@ void mmul(float *A, float *B, float *C, int n)
 		for (j=0; j<n; j+= BS)
 		{
 			memset(buf, 0, sizeof(float) * BS * BS);
+			//for (ii=0; ii<BS; ii++)
 			for (k=0; k<n; k++)
 			{
+				//for (k=0; k<n; k++)
 				for (ii=0; ii<BS; ii++)
 				{
 					ra=la[(i+ii)*n+k];
@@ -77,7 +79,7 @@ void mmul(float *A, float *B, float *C, int n)
 			}
 		}
 	}
-	printf("%d: Collecting data\n", pid);
+	// printf("%d: Collecting data\n", pid);
 	MPI_Gather(lc, n*n/pnum, MPI_FLOAT, C, n*n/pnum, MPI_FLOAT, 0, MPI_COMM_WORLD);
 	MPI_Barrier(MPI_COMM_WORLD);
 	free(la);
