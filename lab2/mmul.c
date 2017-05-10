@@ -45,11 +45,10 @@ void mmul(float *A, float *B, float *C, int n)
 		for (j=0; j<n; j+= BS)
 		{
 			memset(buf, 0, sizeof(float) * BS * BS);
-			//for (ii=0; ii<BS; ii++)
 			for (k=0; k<n; k++)
 			{
 				//for (k=0; k<n; k++)
-				for (ii=0; ii<BS; ii++)
+				for (ii=0; ii < (BS>(n/pnum) ? n/pnum : BS); ii++)
 				{
 					ra=la[(i+ii)*n+k];
 					for (jj=0; jj<BS; jj+=4)
@@ -70,7 +69,7 @@ void mmul(float *A, float *B, float *C, int n)
 				}
 			}
 
-			for (ii=0; ii<BS; ii++)
+			for (ii=0; ii<(BS > n/pnum ? n/pnum : BS); ii++)
 			{
 				for (jj=0; jj<BS; jj++)
 				{
