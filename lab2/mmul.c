@@ -5,9 +5,6 @@
 #include <omp.h>
 
 #define BS 64
-#define la(i, k) la[i*n+k]
-#define lb(k, j) lb[k*n+j]
-#define lc(i, j) lc[i*n+j]
 
 void mmul(float *A, float *B, float *C, int n)
 {
@@ -38,37 +35,53 @@ void mmul(float *A, float *B, float *C, int n)
 	// init lc to zeros
 	memset(lc, 0, sizeof(float) * n * n / pnum);
 	float ra, r0, r1, r2, r3;
-	float buf[BS][BS];
 	
 	for (i=0; i<n/pnum; i+=BS)
 	{
 		for (j=0; j<n; j+= BS)
 		{
+			// local buffer for C
+			float buf[BS][BS];
 			memset(buf, 0, sizeof(float) * BS * BS);
-			for (k=0; k<n; k++)
+			
+			for (k=0; k<n; k+=BS)
 			{
-				//for (k=0; k<n; k++)
-				for (ii=0; ii < (BS>(n/pnum) ? n/pnum : BS); ii++)
+				// local buffer for A and B
+				float Abuf[BS][BS];
+				float Bbuf[BS][BS];
+				for (ii=0; ii< (BS>(n/pnum) ? n/pnum : BS); ii++)
 				{
-					ra=la[(i+ii)*n+k];
-					for (jj=0; jj<BS; jj+=4)
+					for (jj=0; jj<BS; jj++)
 					{
-						r0 = lb[k*n+j+jj];
-						r1 = lb[k*n+j+jj+1];
-						r2 = lb[k*n+j+jj+2];
-						r3 = lb[k*n+j+jj+3];
-						r0 *= ra;
-						r1 *= ra;
-						r2 *= ra;
-						r3 *= ra;
-						buf[ii][jj] += r0;
-						buf[ii][jj+1] += r1;
-						buf[ii][jj+2] += r2;				
-						buf[ii][jj+3] += r3;
+						Abuf[ii][jj] = la[(i+ii)*n + k+jj];
+						Bbuf[ii][jj] = lb[(k+ii)*n + j+jj];
+					}
+				}
+				// computation; 4 multiplication at a time
+				for (ii=0; ii<(BS>(n/pnum) ? n/pnum : BS); ii++)
+				{
+					for (kk=0; kk<BS; kk++)
+					{
+						ra=Abuf[ii][kk];
+						for (jj=0; jj<BS; jj+=4)
+						{
+							r0 = Bbuf[kk][jj];
+							r1 = Bbuf[kk][jj+1];
+							r2 = Bbuf[kk][jj+2];
+							r3 = Bbuf[kk][jj+3];
+							r0 *= ra;
+							r1 *= ra;
+							r2 *= ra;
+							r3 *= ra;
+							buf[ii][jj] += r0;
+							buf[ii][jj+1] += r1;
+							buf[ii][jj+2] += r2;
+							buf[ii][jj+3] += r3; 
+						}
 					}
 				}
 			}
-
+			// put accumulator values back to lc
 			for (ii=0; ii<(BS > n/pnum ? n/pnum : BS); ii++)
 			{
 				for (jj=0; jj<BS; jj++)
