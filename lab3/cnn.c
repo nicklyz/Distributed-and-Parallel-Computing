@@ -8,7 +8,7 @@
 
 // OpenCL includes
 #include <CL/cl.h>
-
+#include "kernel_cl.h"
 
 // Sequential CNN implementation
 void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
@@ -153,9 +153,96 @@ int main()
 
 	/***************************** BUFFER ******************************/
 	// create a buffer object that will contain the data from the host
-	//
+	// Cin
+	cl_mem bufCin;
+	bufCin = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM*INIMROW*INIMROW*sizeof(float), NULL, &status);
 	
+	// Weight
+	cl_mem bufW;
+	bufW = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM*NUM*KERNEL*KERNEL*sizeof(float), NULL, &status);
 
+	// Bias
+	cl_mem bufBias;
+	bufBias = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM*sizeof(float), NULL, &status);
+
+	// Cout
+	cl_mem bufCout;
+	bufCout = clCreateBuffer(context, CL_MEM_WRITE_ONLY, NUM*OUTIMROW*OUTIMROW*sizeof(float), NULL, &status);
+
+	/****************************** ENQUEUE ****************************/
+
+	// Write input Cin to the device buffer bufCin
+	status = clEnqueueWriteBuffer(cmdQueue, bufCin, CL_FALSE, 0, NUM*INIMROW*INIMROW*sizeof(float),
+		Cin, 0, NULL, NULL);
+	checkErr(status, "Write buffer Cin");
+
+	// Write input Weight to the device buffer bufW
+	status = clEnqueueWriteBuffer(cmdQueue, bufW, CL_FALSE, 0, NUM*NUM*KERNEL*KERNEL*sizeof(float),
+		weight, 0, NULL, NULL);
+	checkErr(status, "Write buffer weight");
+
+	// Write input Bias to the device buffer bufBias
+	status = clEnqueueWriteBuffer(cmdQueue, bufBias, CL_FALSE, 0, NUM*sizeof(float),
+		bias, 0, NULL, NULL);
+	checkErr(status, "Write buffer bias");
+
+	/****************************** PROGRAM ****************************/
+	// Create a program with source code
+	cl_program program = clCreateProgramWithSource(context, 1, (const char**)&kernel_cl, NULL, &status);
+
+	// Build the program for the device
+	status = clBuildProgram(program, numDevices, devices, NULL, NULL, NULL);
+	if (status == CL_BUILD_PROGRAM_FAILURE) {
+		size_t log_size;
+		clGetProgramBuildInfo(program, devices[0], CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+		char *log = (char*)malloc(log_size);
+		clGetProgramBuildInfo(program, devices[0], CL_PROGRAM_BUILD_LOG, log_size, log, NULL);
+		fprintf(stderr, "%s\n", log);
+		exit(1);
+	}
+
+	/***************************** KERNEL ************************************/
+	// create the cnn kernel
+	cl_kernel kernel;
+	kernel = clCreateKernel(program, "cnn", &status);
+
+	// Associate the input and output buffers with the kernel
+	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufCin);
+	checkErr(status, "Set Arg 0");
+	status = clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufW);
+	checkErr(status, "Set Arg 1");
+	status = clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufBias);
+	checkErr(status, "Set Arg 2");
+	status = clSetKernelArg(kernel, 3, sizeof(cl_mem), &bufCout);
+	checkErr(status, "Set Arg 3");
+
+	/******************************** WORK SIZE *******************************/
+	// Define an index space of work items for execution. A workgroup size (local work size)
+	// is not required, but can be used.
+	size_t globalWorkSize[2] = {NUM, NUM};
+
+	// There are NUM x NUM work-items
+	// globalWorkSize[0] = NUM;
+
+	// Execute the kernel
+	
+	status = clEnqueueNDRangeKernel(cmdQueue, kernel, 2, NULL, 
+		globalWorkSize, NULL, 0, NULL, NULL);
+	checkErr(status, "Execute Kernel");
+
+	// read the device output buffer
+	clEnqueueReadBuffer(cmdQueue, bufCout, CL_TRUE, 0, NUM*OUTIMROW*OUTIMROW*sizeof(float),
+		Cout, 0, NULL, NULL);
+
+	clReleaseKernel(kernel);
+    	clReleaseProgram(program);
+    	clReleaseCommandQueue(cmdQueue);
+    	clReleaseMemObject(bufCin);
+    	clReleaseMemObject(bufW);
+    	clReleaseMemObject(bufBias);
+	clReleaseMemObject(bufCout);
+    	clReleaseContext(context);
+	
 	gettimeofday(&t2, NULL);
 	float elapsed_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1e6;
 	fprintf(stderr, "time(s): %f\n", elapsed_time);
