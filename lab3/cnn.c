@@ -10,7 +10,15 @@
 #include <CL/cl.h>
 #include "kernel_cl.h"
 
-// Sequential CNN implementation
+
+inline void checkErr(cl_int err, const char * name) {
+	if (err != CL_SUCCESS) {
+		fprintf(stderr, "ERROR: %s (%d)\n", name, err);
+		exit(EXIT_FAILURE);
+	}
+}
+
+// Parallel CNN implementation
 void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
           float weight[NUM][NUM][KERNEL][KERNEL], float bias[NUM])
 {
@@ -23,65 +31,7 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
 		}
 	}
 
-// Convolution
-	for(int i = 0; i < NUM; i++) {
-		for(int j = 0; j < NUM; j++) {
-			for(int h = 0; h < IMROW; h++) {
-				for(int w = 0; w < IMROW; w++) {
-					for(int p = 0; p < KERNEL; p++) {
-						for(int q = 0; q < KERNEL; q++)
-							C[i][h][w] += weight[i][j][p][q] * Cin[j][h + p][w + q];
-					}
-				}
-			}
-		}
-	}
-
-// ReLU
-	for (int i = 0; i < NUM; i++) {
-		for (int h = 0; h < IMROW; h++) {
-			for (int w = 0; w < IMROW; w++) {
-				C[i][h][w] = fmax(0, C[i][h][w]);
-			}	
-		}
-	}
-
-// Max pooling
-	for (int i = 0; i < NUM; i++) {
-		for (int h = 0; h < OUTIMROW; h++) {
-			for (int w = 0; w < OUTIMROW; w++) {
-				float local_max = C[i][2 * h][2 * w];
-				local_max = fmax(local_max, C[i][2 * h + 1][2 * w]);
-				local_max = fmax(local_max, C[i][2 * h + 1][2 * w + 1]);
-				local_max = fmax(local_max, C[i][2 * h][2 * w + 1]);
-				Cout[i][h][w] = local_max;
-			}
-		}
-	}
-}
-
-inline void checkErr(cl_int err, const char * name) {
-	if (err != CL_SUCCESS) {
-		fprintf(stderr, "ERROR: %s (%d)\n", name, err);
-		exit(EXIT_FAILURE);
-	}
-}
-int main()
-{
-	static float Cout[NUM][OUTIMROW][OUTIMROW];
-	static float Cin[NUM][INIMROW][INIMROW];
-	static float weight[NUM][NUM][KERNEL][KERNEL];
-	static float bias[NUM];
-
-	LoadData(Cin, weight, bias);
-
-	// OpenCL host program
-	fprintf(stderr, "Start cnn computation\n");
-	struct timeval t1, t2;
-	gettimeofday(&t1, NULL);
-	// --- Please add your code below ---
-	// conv(Cout, Cin, weight, bias);	
-	
+// Convolution is parallelized because it is the bottle neck of the computation speed
 	// use this to check the output of each API call
 	cl_int status;
 	
@@ -161,13 +111,9 @@ int main()
 	cl_mem bufW;
 	bufW = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM*NUM*KERNEL*KERNEL*sizeof(float), NULL, &status);
 
-	// Bias
-	cl_mem bufBias;
-	bufBias = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM*sizeof(float), NULL, &status);
-
-	// Cout
-	cl_mem bufCout;
-	bufCout = clCreateBuffer(context, CL_MEM_WRITE_ONLY, NUM*OUTIMROW*OUTIMROW*sizeof(float), NULL, &status);
+	// Cconv
+	cl_mem bufCconv;
+	bufCconv = clCreateBuffer(context, CL_MEM_READ_WRITE, NUM*IMROW*IMROW*sizeof(float), NULL, &status);
 
 	/****************************** ENQUEUE ****************************/
 
@@ -181,10 +127,10 @@ int main()
 		weight, 0, NULL, NULL);
 	checkErr(status, "Write buffer weight");
 
-	// Write input Bias to the device buffer bufBias
-	status = clEnqueueWriteBuffer(cmdQueue, bufBias, CL_FALSE, 0, NUM*sizeof(float),
-		bias, 0, NULL, NULL);
-	checkErr(status, "Write buffer bias");
+	// Write conv buffer to the device buffer bufCconv
+	status = clEnqueueWriteBuffer(cmdQueue, bufCconv, CL_FALSE, 0, NUM*IMROW*IMROW*sizeof(float),
+		C, 0, NULL, NULL);
+	checkErr(status, "Write buffer Cconv");
 
 	/****************************** PROGRAM ****************************/
 	// Create a program with source code
@@ -202,46 +148,83 @@ int main()
 	}
 
 	/***************************** KERNEL ************************************/
-	// create the cnn kernel
+	// create the conv kernel
 	cl_kernel kernel;
-	kernel = clCreateKernel(program, "cnn", &status);
+	kernel = clCreateKernel(program, "conv", &status);
 
 	// Associate the input and output buffers with the kernel
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufCin);
 	checkErr(status, "Set Arg 0");
 	status = clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufW);
 	checkErr(status, "Set Arg 1");
-	status = clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufBias);
+	status = clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufCconv);
 	checkErr(status, "Set Arg 2");
-	status = clSetKernelArg(kernel, 3, sizeof(cl_mem), &bufCout);
-	checkErr(status, "Set Arg 3");
 
 	/******************************** WORK SIZE *******************************/
 	// Define an index space of work items for execution. A workgroup size (local work size)
 	// is not required, but can be used.
-	size_t globalWorkSize[2] = {NUM, NUM};
+	size_t globalWorkSize[1];
 
-	// There are NUM x NUM work-items
-	// globalWorkSize[0] = NUM;
+	// There are NUM work-items
+	globalWorkSize[0] = NUM;
 
 	// Execute the kernel
-	
-	status = clEnqueueNDRangeKernel(cmdQueue, kernel, 2, NULL, 
+	status = clEnqueueNDRangeKernel(cmdQueue, kernel, 1, NULL, 
 		globalWorkSize, NULL, 0, NULL, NULL);
 	checkErr(status, "Execute Kernel");
 
 	// read the device output buffer
-	clEnqueueReadBuffer(cmdQueue, bufCout, CL_TRUE, 0, NUM*OUTIMROW*OUTIMROW*sizeof(float),
-		Cout, 0, NULL, NULL);
+	clEnqueueReadBuffer(cmdQueue, bufCconv, CL_TRUE, 0, NUM*IMROW*IMROW*sizeof(float),
+		C, 0, NULL, NULL);
 
 	clReleaseKernel(kernel);
-    	clReleaseProgram(program);
-    	clReleaseCommandQueue(cmdQueue);
-    	clReleaseMemObject(bufCin);
-    	clReleaseMemObject(bufW);
-    	clReleaseMemObject(bufBias);
-	clReleaseMemObject(bufCout);
-    	clReleaseContext(context);
+    clReleaseProgram(program);
+    clReleaseCommandQueue(cmdQueue);
+    clReleaseMemObject(bufCin);
+    clReleaseMemObject(bufW);
+	clReleaseMemObject(bufCconv);
+    clReleaseContext(context);
+	
+// end of convolution
+
+// ReLU
+	for (int i = 0; i < NUM; i++) {
+		for (int h = 0; h < IMROW; h++) {
+			for (int w = 0; w < IMROW; w++) {
+				C[i][h][w] = fmax(0, C[i][h][w]);
+			}	
+		}
+	}
+
+// Max pooling
+	for (int i = 0; i < NUM; i++) {
+		for (int h = 0; h < OUTIMROW; h++) {
+			for (int w = 0; w < OUTIMROW; w++) {
+				float local_max = C[i][2 * h][2 * w];
+				local_max = fmax(local_max, C[i][2 * h + 1][2 * w]);
+				local_max = fmax(local_max, C[i][2 * h + 1][2 * w + 1]);
+				local_max = fmax(local_max, C[i][2 * h][2 * w + 1]);
+				Cout[i][h][w] = local_max;
+			}
+		}
+	}
+}
+
+int main()
+{
+	static float Cout[NUM][OUTIMROW][OUTIMROW];
+	static float Cin[NUM][INIMROW][INIMROW];
+	static float weight[NUM][NUM][KERNEL][KERNEL];
+	static float bias[NUM];
+
+	LoadData(Cin, weight, bias);
+
+	// OpenCL host program
+	fprintf(stderr, "Start cnn computation\n");
+	struct timeval t1, t2;
+	gettimeofday(&t1, NULL);
+	// --- Please add your code below ---
+	conv(Cout, Cin, weight, bias);
 	
 	gettimeofday(&t2, NULL);
 	float elapsed_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1e6;
