@@ -18,18 +18,29 @@ void conv(__global float *Cin,
 	//printf("CPU: %d, %d\n", i, j);
 		
 // Convolution
-	
+	float c_local[IMROW][IMROW];
+	for (int h = 0; h < IMROW; h++) {
+		for (int w = 0; w < IMROW; w++) {
+			c_local[h][w] = Cconv[i*IMROW*IMROW + h*IMROW + w] ;
+		}
+	}
 	for(int j = 0; j < NUM; j++) {
-		
 		for(int h = 0; h < IMROW; h++) {
 			for(int w = 0; w < IMROW; w++) {
 				for(int p = 0; p < KERNEL; p++) {
 					for(int q = 0; q < KERNEL; q++)
-						Cconv[i*IMROW*IMROW + h*IMROW + w] += 
+						c_local[h][w] += 
 							weight[i*NUM*KERNEL*KERNEL +j*KERNEL*KERNEL + p*KERNEL + q] * 
 							Cin[j*INIMROW*INIMROW + (h + p)*INIMROW + (w + q)];
 				}
 			}
+		}
+	}
+	
+	// write back to Cconv
+	for (int h = 0; h < IMROW; h++) {
+		for (int w = 0; w < IMROW; w++) {
+			Cconv[i*IMROW*IMROW + h*IMROW + w] = c_local[h][w];
 		}
 	}
 }                                                   
