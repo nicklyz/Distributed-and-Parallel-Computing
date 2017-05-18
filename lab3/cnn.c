@@ -22,6 +22,9 @@ inline void checkErr(cl_int err, const char * name) {
 void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
           float weight[NUM][NUM][KERNEL][KERNEL], float bias[NUM])
 {
+	struct timeval t1, t2;
+	float elapsed_time;
+
 	static float C[NUM][IMROW][IMROW];
 
 	for(int i = 0; i < NUM; i++) {
@@ -134,6 +137,8 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
 
 	/****************************** PROGRAM ****************************/
 	// Create a program with source code
+	gettimeofday(&t1, NULL);
+
 	cl_program program = clCreateProgramWithSource(context, 1, (const char**)&kernel_cl, NULL, &status);
 
 	// Build the program for the device
@@ -146,6 +151,10 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
 		fprintf(stderr, "%s\n", log);
 		exit(1);
 	}
+
+	gettimeofday(&t2, NULL);
+	elapsed_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1e6;
+	fprintf(stderr, "Compilation time(s): %f\n", elapsed_time);
 
 	/***************************** KERNEL ************************************/
 	// create the conv kernel
@@ -169,7 +178,6 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
 	globalWorkSize[0] = NUM;
 
 	/******************************** EXECUTION *********************************/
-	struct timeval t1, t2;
 	gettimeofday(&t1, NULL);
 
 	// Execute the kernel
@@ -182,7 +190,7 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
 		C, 0, NULL, NULL);
 
 	gettimeofday(&t2, NULL);
-	float elapsed_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1e6;
+	elapsed_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1e6;
 	fprintf(stderr, "Convolution time(s): %f\n", elapsed_time);
 
 	clReleaseKernel(kernel);
