@@ -168,6 +168,10 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
 	// There are NUM work-items
 	globalWorkSize[0] = NUM;
 
+	/******************************** EXECUTION *******************************/
+	struct timeval t1, t2;
+	gettimeofday(&t1, NULL);
+	
 	// Execute the kernel
 	status = clEnqueueNDRangeKernel(cmdQueue, kernel, 1, NULL, 
 		globalWorkSize, NULL, 0, NULL, NULL);
@@ -176,14 +180,18 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
 	// read the device output buffer
 	clEnqueueReadBuffer(cmdQueue, bufCconv, CL_TRUE, 0, NUM*IMROW*IMROW*sizeof(float),
 		C, 0, NULL, NULL);
+	
+	gettimeofday(&t2, NULL);
+	float elapsed_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1e6;
+	fprintf(stderr, "Convolution time(s): %f\n", elapsed_time);
 
 	clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    clReleaseCommandQueue(cmdQueue);
-    clReleaseMemObject(bufCin);
-    clReleaseMemObject(bufW);
+	clReleaseProgram(program);
+	clReleaseCommandQueue(cmdQueue);
+	clReleaseMemObject(bufCin);
+	clReleaseMemObject(bufW);
 	clReleaseMemObject(bufCconv);
-    clReleaseContext(context);
+	clReleaseContext(context);
 	
 // end of convolution
 
