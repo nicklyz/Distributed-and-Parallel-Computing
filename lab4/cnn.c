@@ -4,6 +4,19 @@
 #include <math.h>
 #include <sys/time.h>
 #include "cnn.h"
+#include <string.h>
+
+#include <CL/cl.h>
+#include "kernel_cl.h"
+
+#define BLOCK_SIZE 32
+
+inline void checkErr(cl_int err, const char * name) {
+	if (err != CL_SUCCESS) {
+		fprintf(stderr, "ERROR: %s (%d)\n", name, err);
+		exit(EXIT_FAILURE);
+	}
+}
 
 // Sequential CNN implementation
 void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
@@ -104,7 +117,7 @@ for (i = 0; i < numPlatforms; i++)
     memcpy((void*)vendorF, (void*)vendor, 6);
     vendorF[6] = '\0';
     fprintf(stderr, "%s\n", vendorF);
-    if (strcmp(vendorF, "Intel(") == 0)
+    if (strcmp(vendorF, "NVIDIA") == 0)
     {
         platform_index = i;
         break;
@@ -131,6 +144,16 @@ devices = (cl_device_id*) malloc(numDevices * sizeof(cl_device_id));
 // Fill in the devices
 status = clGetDeviceIDs(platforms[platform_index], CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
 checkErr(status, "Fill in the devices");
+
+char buffer[10240];
+cl_uint buf_uint;
+cl_ulong buf_ulong;
+status = clGetDeviceInfo(devices[0], CL_DEVICE_NAME, sizeof(buffer), buffer, NULL);
+printf("DEVICE_NAME = %s\n", buffer);
+status = clGetDeviceInfo(devices[0], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(buf_ulong), &buf_ulong, NULL);
+printf("DEVICE_LOCAL_MEM_SIZE = %llu\n", buf_ulong);
+status = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(buf_uint), &buf_uint, NULL);
+printf("DEVICE_MAX_WORK_ITEM_DIMENSION = %u\n", (unsigned int)buf_uint);
 
 /**************************** CONTEXT *******************************/
 
@@ -212,10 +235,9 @@ checkErr(status, "Set Arg 2");
 /******************************** WORK SIZE *******************************/
 // Define an index space of work items for execution. A workgroup size (local work size)
 // is not required, but can be used.
-size_t globalWorkSize[1];
+size_t localWorkSize[3] = {1, BLOCK_SIZE, BLOCK_SIZE};
+size_t globalWorkSize[3] = {NUM, IMROW, IMROW};
 
-// There are NUM work-items
-globalWorkSize[0] = NUM;
 
 /******************************** EXECUTION *********************************/
 gettimeofday(&t1, NULL);
