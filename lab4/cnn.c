@@ -80,13 +80,6 @@ float elapsed_time;
 
 static float C[NUM][IMROW][IMROW];
 
-for(int i = 0; i < NUM; i++) {
-    for(int h = 0; h < IMROW; h++) {
-        for(int w = 0; w < IMROW; w++)
-            C[i][h][w] = bias[i];
-    }
-}
-
 // Convolution is parallelized because it is the bottle neck of the computation speed
 // use this to check the output of each API call
 cl_int status;
@@ -179,6 +172,10 @@ bufCin = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM*INIMROW*INIMROW*sizeof(fl
 cl_mem bufW;
 bufW = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM*NUM*KERNEL*KERNEL*sizeof(float), NULL, &status);
 
+// bias
+cl_mem bufBias;
+bufBias = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM*sizeof(float), NULL, &status);
+
 // Cconv
 cl_mem bufCconv;
 bufCconv = clCreateBuffer(context, CL_MEM_READ_WRITE, NUM*IMROW*IMROW*sizeof(float), NULL, &status);
@@ -194,6 +191,9 @@ checkErr(status, "Write buffer Cin");
 status = clEnqueueWriteBuffer(cmdQueue, bufW, CL_TRUE, 0, NUM*NUM*KERNEL*KERNEL*sizeof(float),
     weight, 0, NULL, NULL);
 checkErr(status, "Write buffer weight");
+
+status = clEnqueueWriteBuffer(cmdQueue, bufBias, CL_TRUE, 0, NUM*sizeof(float), bias, 0, NULL, NULL);
+checkErr(status, "Write buffer bias");
 
 // Write conv buffer to the device buffer bufCconv
 status = clEnqueueWriteBuffer(cmdQueue, bufCconv, CL_TRUE, 0, NUM*IMROW*IMROW*sizeof(float),
@@ -231,13 +231,14 @@ status = clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufCin);
 checkErr(status, "Set Arg 0");
 status = clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufW);
 checkErr(status, "Set Arg 1");
-status = clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufCconv);
+status = clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufBias);
 checkErr(status, "Set Arg 2");
+status = clSetKernelArg(kernel, 3, sizeof(cl_mem), &bufCconv);
 
 /******************************** WORK SIZE *******************************/
 // Define an index space of work items for execution. A workgroup size (local work size)
 // is not required, but can be used.
-size_t localWorkSize[3] = {1, BLOCK_SIZE, BLOCK_SIZE};
+size_t localWorkSize[3] = {BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE};
 size_t globalWorkSize[3] = {NUM, IMROW, IMROW};
 
 
@@ -267,15 +268,6 @@ clReleaseMemObject(bufCconv);
 clReleaseContext(context);
 
 // end of convolution
-
-// ReLU
-for (int i = 0; i < NUM; i++) {
-    for (int h = 0; h < IMROW; h++) {
-        for (int w = 0; w < IMROW; w++) {
-            C[i][h][w] = fmax(0, C[i][h][w]);
-        }
-    }
-}
 
 // Max pooling
 for (int i = 0; i < NUM; i++) {

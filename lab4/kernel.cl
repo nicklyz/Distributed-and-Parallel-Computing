@@ -7,41 +7,42 @@
 #define IMROW2 50176
 #define KK 25
 #define INIMROW2 51984
+#define BLOCK_SIZE 32
 
 __kernel
 void conv(	__global float *Cin,
 		__global float *weight,
+		__global float *bias,
 		__global float *Cconv)
 {
    	// Get the work-item's unique ID
-   	int i = get_group_id(0);
-	int h = get_group_id(1);
-	int w = get_group_id(2);
+	int dim = get_work_dim();
+	printf("Numer of dimensions in kernel: %d\n", dim);
+
+	// Block Index
+	int bi = get_group_id(0);
+	int bh = get_group_id(1);
+	int bw = get_group_id(2);
 	
-	printf("i, h, w: %d, %d, %d\n", i, h, w);
-	/*
+	// Thread Index
+	int ti = get_local_id(0);
+	int th = get_local_id(1);
+	int tw = get_local_id(2);
+	
+	// Index
+	int i = bi * BLOCK_SIZE + ii;
+	int h = bh * BLOCK_SIZE + th;
+	int w = bw * BLOCK_SIZE + tw;
+
+	// local C buffer
+	__local float C; 
+	
+	// Assign weight
+	C = bias[i];
+	
 	// Convolution
-	for(int j = 0; j < NUM; j++) {
-		// local buffer for w[i][j]
-		__private float w_local[KERNEL][KERNEL];
-		for (int p = 0; p < KERNEL; p++) {
-			for (int q = 0; q < KERNEL; q++) {
-				w_local[p][q] = weight[i*NKK + j*KK + p*KERNEL + q];
-			}
-		}
-		for(int h = 0; h < IMROW; h++) {
-			for(int w = 0; w < IMROW; w+=4) {
-				__private float4 tmp4;
-				tmp4 = vload4(0, &Cconv[i*IMROW2 + h*IMROW + w]);
-				for(int p = 0; p < KERNEL; p++) {
-					for(int q = 0; q < KERNEL; q++) {
-						float4 i4 = vload4(0, &Cin[j*INIMROW2 + (h + p) * INIMROW + w + q]);
-						tmp4 = tmp4 + i4 * w_local[p][q];
-					}
-				}
-				vstore4(tmp4, 0, &Cconv[i*IMROW2 + h*IMROW + w]);
-			}
-		}
-	}
-	*/
+	
+	// RELU
+
+	Cconv[i*IMROW2 + h*IMROW + w] = C;
 }
