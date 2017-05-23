@@ -14,8 +14,12 @@ void conv(	__global float *Cin,
 		__global float *Cconv)
 {
    	// Get the work-item's unique ID
-   	int i = get_global_id(0);
-
+   	int i = get_group_id(0);
+	int h = get_group_id(1);
+	int w = get_group_id(2);
+	
+	printf("i, h, w: %d, %d, %d\n", i, h, w);
+	/*
 	// Convolution
 	for(int j = 0; j < NUM; j++) {
 		// local buffer for w[i][j]
@@ -39,4 +43,5 @@ void conv(	__global float *Cin,
 			}
 		}
 	}
+	*/
 }

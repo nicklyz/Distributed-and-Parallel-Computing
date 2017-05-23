@@ -106,7 +106,7 @@ platforms = (cl_platform_id*)malloc(numPlatforms * sizeof(cl_platform_id));
 status = clGetPlatformIDs(numPlatforms, platforms, NULL);
 checkErr(status, "Fill in the platforms");
 
-// Find CPU
+// Find GPU
 int platform_index = -1;
 int i;
 for (i = 0; i < numPlatforms; i++)
@@ -125,7 +125,7 @@ for (i = 0; i < numPlatforms; i++)
 
 }
 if (platform_index == -1) {
-    printf("CPU Platform not found!\n");
+    printf("GPU Platform not found!\n");
     exit(1);
 }
 
@@ -243,8 +243,8 @@ size_t globalWorkSize[3] = {NUM, IMROW, IMROW};
 gettimeofday(&t1, NULL);
 
 // Execute the kernel
-status = clEnqueueNDRangeKernel(cmdQueue, kernel, 1, NULL,
-    globalWorkSize, NULL, 0, NULL, NULL);
+status = clEnqueueNDRangeKernel(cmdQueue, kernel, 3, NULL,
+    globalWorkSize, localWorkSize, 0, NULL, NULL);
 checkErr(status, "Execute Kernel");
 
 // read the device output buffer
@@ -254,6 +254,7 @@ clEnqueueReadBuffer(cmdQueue, bufCconv, CL_TRUE, 0, NUM*IMROW*IMROW*sizeof(float
 gettimeofday(&t2, NULL);
 elapsed_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1e6;
 fprintf(stderr, "Convolution time(s): %f\n", elapsed_time);
+fprintf(stderr, "GOPs: %f\n", (float)NUM * NUM * IMROW * IMROW * KERNEL * KERNEL * 2 / elapsed_time / 1e9);
 
 clReleaseKernel(kernel);
 clReleaseProgram(program);
