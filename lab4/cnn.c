@@ -160,12 +160,14 @@ printf("DEVICE_MAX_WORK_ITEM_DIMENSION = %u\n", (unsigned int)buf_uint);
 // create a context and associate it with the devices
 cl_context context;
 context = clCreateContext(NULL, numDevices, devices, NULL, NULL, &status);
+checkErr(status, "Create context");
 
 /**************************** COMMAND QUEUE *************************/
 
 // create a command queue and associate it with the devices
 cl_command_queue cmdQueue;
 cmdQueue = clCreateCommandQueue(context, devices[0], 0, &status);
+checkErr(status, "Create Command Queue");
 
 /***************************** BUFFER ******************************/
 // create a buffer object that will contain the data from the host
@@ -184,17 +186,17 @@ bufCconv = clCreateBuffer(context, CL_MEM_READ_WRITE, NUM*IMROW*IMROW*sizeof(flo
 /****************************** ENQUEUE ****************************/
 
 // Write input Cin to the device buffer bufCin
-status = clEnqueueWriteBuffer(cmdQueue, bufCin, CL_FALSE, 0, NUM*INIMROW*INIMROW*sizeof(float),
+status = clEnqueueWriteBuffer(cmdQueue, bufCin, CL_TRUE, 0, NUM*INIMROW*INIMROW*sizeof(float),
     Cin, 0, NULL, NULL);
 checkErr(status, "Write buffer Cin");
 
 // Write input Weight to the device buffer bufW
-status = clEnqueueWriteBuffer(cmdQueue, bufW, CL_FALSE, 0, NUM*NUM*KERNEL*KERNEL*sizeof(float),
+status = clEnqueueWriteBuffer(cmdQueue, bufW, CL_TRUE, 0, NUM*NUM*KERNEL*KERNEL*sizeof(float),
     weight, 0, NULL, NULL);
 checkErr(status, "Write buffer weight");
 
 // Write conv buffer to the device buffer bufCconv
-status = clEnqueueWriteBuffer(cmdQueue, bufCconv, CL_FALSE, 0, NUM*IMROW*IMROW*sizeof(float),
+status = clEnqueueWriteBuffer(cmdQueue, bufCconv, CL_TRUE, 0, NUM*IMROW*IMROW*sizeof(float),
     C, 0, NULL, NULL);
 checkErr(status, "Write buffer Cconv");
 
