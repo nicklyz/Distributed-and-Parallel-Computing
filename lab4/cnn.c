@@ -138,6 +138,7 @@ devices = (cl_device_id*) malloc(numDevices * sizeof(cl_device_id));
 status = clGetDeviceIDs(platforms[platform_index], CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
 checkErr(status, "Fill in the devices");
 
+/*
 char buffer[10240];
 cl_uint buf_uint;
 cl_ulong buf_ulong;
@@ -151,6 +152,7 @@ status = clGetDeviceInfo(devices[0], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(buf_ulong)
 printf("DEVICE_LOCAL_MEM_SIZE = %llu\n", buf_ulong);
 status = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(buf_uint), &buf_uint, NULL);
 printf("DEVICE_MAX_WORK_ITEM_DIMENSION = %u\n", (unsigned int)buf_uint);
+*/
 
 /**************************** CONTEXT *******************************/
 
@@ -261,7 +263,7 @@ clEnqueueReadBuffer(cmdQueue, bufCconv, CL_TRUE, 0, NUM*IMROW*IMROW*sizeof(float
 gettimeofday(&t2, NULL);
 elapsed_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1e6;
 fprintf(stderr, "Convolution time(s): %f\n", elapsed_time);
-fprintf(stderr, "GOPs: %f\n", (float)NUM * NUM * IMROW * IMROW * KERNEL * KERNEL * 2 / elapsed_time / 1e9);
+fprintf(stderr, "Convolution GOPs: %f\n", (float)NUM * NUM * IMROW * IMROW * KERNEL * KERNEL * 2 / elapsed_time / 1e9);
 
 clReleaseKernel(kernel);
 clReleaseProgram(program);
