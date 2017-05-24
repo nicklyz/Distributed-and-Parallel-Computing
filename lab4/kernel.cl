@@ -16,8 +16,8 @@ void conv(	__global float *Cin,
 		__global float *Cconv)
 {
    	// Get the work-item's unique ID
-	int dim = get_work_dim();
-	printf("Numer of dimensions in kernel: %d\n", dim);
+	// int dim = get_work_dim();
+	// printf("Numer of dimensions in kernel: %d\n", dim);
 
 	// Block Index
 	int bi = get_group_id(0);
@@ -30,19 +30,44 @@ void conv(	__global float *Cin,
 	int tw = get_local_id(2);
 	
 	// Index
-	int i = bi * BLOCK_SIZE + ii;
+	int i = bi;
 	int h = bh * BLOCK_SIZE + th;
 	int w = bw * BLOCK_SIZE + tw;
 
-	// local C buffer
+	// local C buffer C[i][h][w]
 	__local float C; 
 	
 	// Assign weight
 	C = bias[i];
-	
-	// Convolution
-	
-	// RELU
 
-	Cconv[i*IMROW2 + h*IMROW + w] = C;
+	// Convolution
+	for (int j = 0; j < NUM; j++) {
+		// __local float w_local[KERNEL][KERNEL];
+		// __local float Cin_local[BLOCK_SIZE+KERNEL-1][BLOCK_SIZE+KERNEL-1];
+		
+		
+		//if (th < BLOCK_SIZE || tw < BLOCK_SIZE) { 
+		//	Cin_local[th][tw] = Cin[j*INIMROW2 + h*INIMROW * w];
+		//}
+		//else {
+		//	for (int p=0; p<KERNEL; p++) {
+		//		for (int q=0; q<KERNEL; q++) {
+		//			Cin_local[th+p][tw+q] = 
+		//				Cin[j*INIMROW2 +(h+p)*INIMROW + w+q];
+		//		}
+		//	}
+		//}
+		// barrier(CLK_LOCAL_MEM_FENCE);
+		
+		for (int p = 0; p < KERNEL; p++) {
+			for (int q = 0; q < KERNEL; q++) {
+				float add = weight[i*NKK + j*KK + p*KERNEL + q]
+					* Cin[j*INIMROW2 + (h+q)*INIMROW + w+1];
+				C += add;
+			}
+		}
+		// barrier(CLK_LOCAL_MEM_FENCE);
+	}	
+	// RELU
+	Cconv[i*IMROW2 + h*IMROW + w] = fmax(0.0f, C);
 }

@@ -141,6 +141,10 @@ checkErr(status, "Fill in the devices");
 char buffer[10240];
 cl_uint buf_uint;
 cl_ulong buf_ulong;
+status = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(buf_uint), &buf_uint, NULL);
+printf("DEVICE_MAX_WORK_GROUP_SIZE = %u\n", (unsigned int)buf_uint);
+status = clGetDeviceInfo(devices[0], CL_DEVICE_ADDRESS_BITS, sizeof(buf_uint), &buf_uint, NULL);
+printf("DEVICE ADDRESS BITS = %u\n", (unsigned int)buf_uint);
 status = clGetDeviceInfo(devices[0], CL_DEVICE_NAME, sizeof(buffer), buffer, NULL);
 printf("DEVICE_NAME = %s\n", buffer);
 status = clGetDeviceInfo(devices[0], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(buf_ulong), &buf_ulong, NULL);
@@ -238,7 +242,7 @@ status = clSetKernelArg(kernel, 3, sizeof(cl_mem), &bufCconv);
 /******************************** WORK SIZE *******************************/
 // Define an index space of work items for execution. A workgroup size (local work size)
 // is not required, but can be used.
-size_t localWorkSize[3] = {BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE};
+size_t localWorkSize[3] = {1, BLOCK_SIZE, BLOCK_SIZE};
 size_t globalWorkSize[3] = {NUM, IMROW, IMROW};
 
 
