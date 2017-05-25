@@ -192,6 +192,7 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW][INIMROW],
 	gettimeofday(&t2, NULL);
 	elapsed_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1e6;
 	fprintf(stderr, "Convolution time(s): %f\n", elapsed_time);
+	fprintf(stderr, "Convolution GOPs: %f\n", (float)NUM * NUM * IMROW * IMROW * KERNEL * KERNEL * 2 / elapsed_time / 1e9);
 
 	clReleaseKernel(kernel);
 	clReleaseProgram(program);

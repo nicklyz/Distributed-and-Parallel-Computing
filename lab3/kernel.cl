@@ -26,16 +26,16 @@ void conv(	__global float *Cin,
 			}
 		}
 		for(int h = 0; h < IMROW; h++) {
-			for(int w = 0; w < IMROW; w+=4) {
-				__private float4 tmp4;
-				tmp4 = vload4(0, &Cconv[i*IMROW2 + h*IMROW + w]);
-				for(int p = 0; p < KERNEL; p++) {
+			for(int p = 0; p < KERNEL; p++) {
+				for(int w = 0; w < IMROW; w+=4) {
+					__private float4 tmp4;
+					tmp4 = vload4(0, &Cconv[i*IMROW2 + h*IMROW + w]);
 					for(int q = 0; q < KERNEL; q++) {
 						float4 i4 = vload4(0, &Cin[j*INIMROW2 + (h + p) * INIMROW + w + q]);
 						tmp4 = tmp4 + i4 * w_local[p][q];
 					}
+					vstore4(tmp4, 0, &Cconv[i*IMROW2 + h*IMROW + w]);
 				}
-				vstore4(tmp4, 0, &Cconv[i*IMROW2 + h*IMROW + w]);
 			}
 		}
 	}
