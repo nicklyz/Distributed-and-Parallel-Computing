@@ -21,12 +21,11 @@ void conv(	__global float *Cin,
 	int h = get_global_id(1);
 	int w = get_global_id(2);
 
-	int bi = get_group_id(0);
+	// Get work group ID
 	int bh = get_group_id(1);
 	int bw = get_group_id(2);
 	
-	// Thread Index
-	// int ti = get_local_id(0);
+	// Get local ID in work group
 	int th = get_local_id(1);
 	int tw = get_local_id(2);
 	int local_id = th * BLOCK_SIZE + tw;
