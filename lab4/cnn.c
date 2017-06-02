@@ -244,8 +244,8 @@ status = clSetKernelArg(kernel, 3, sizeof(cl_mem), &bufCconv);
 /******************************** WORK SIZE *******************************/
 // Define an index space of work items for execution. A workgroup size (local work size)
 // is not required, but can be used.
-size_t localWorkSize[3] = {1, BLOCK_SIZE, BLOCK_SIZE};
-size_t globalWorkSize[3] = {NUM, IMROW, IMROW};
+size_t localWorkSize[3] = {BLOCK_SIZE, BLOCK_SIZE, 1};
+size_t globalWorkSize[3] = {IMROW, IMROW, NUM};
 
 
 /******************************** EXECUTION *********************************/

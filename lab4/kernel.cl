@@ -17,17 +17,17 @@ void conv(	__global float *Cin,
 		__global float *Cconv)
 {
    	// Get the work-item's unique ID
-	int i = get_global_id(0);
-	int h = get_global_id(1);
-	int w = get_global_id(2);
+	int h = get_global_id(0);
+	int w = get_global_id(1);
+	int i = get_global_id(2);
 
 	// Get work group ID
-	int bh = get_group_id(1);
-	int bw = get_group_id(2);
+	int bh = get_group_id(0);
+	int bw = get_group_id(1);
 	
 	// Get local ID in work group
-	int th = get_local_id(1);
-	int tw = get_local_id(2);
+	int th = get_local_id(0);
+	int tw = get_local_id(1);
 	int local_id = th * BLOCK_SIZE + tw;
 
 	// Assign weight
@@ -57,10 +57,10 @@ void conv(	__global float *Cin,
 					Cin[j0*INIMROW2 + (bh * BLOCK_SIZE + hh) *INIMROW + (bw * BLOCK_SIZE + ww)];
 			}
 		}
-		if (th < 5 && tw < 5) {
+		if (th > 26 && tw > 26) {
 			for (int jj = 0; jj < JBLOCK; jj++) {
 				int j0 = j + jj;
-				w_local[jj][th][tw] = weight[i*NKK + j0*KK + th*KERNEL + tw];
+				w_local[jj][BLOCK_SIZE-1-th][BLOCK_SIZE-1-tw] = weight[i*NKK + j0*KK + (BLOCK_SIZE-1-th)*KERNEL + (BLOCK_SIZE-1-tw)];
 			}
 		}
 		barrier(CLK_LOCAL_MEM_FENCE);
