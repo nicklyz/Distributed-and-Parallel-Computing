@@ -1,0 +1,19 @@
+Feature FAlCON_XILINX checked out. 
+[WARN] Invalid argument to -I; path does not exist: '/merlin_fs/merlin1/hdd1/pengzh/test/class/cs259_may2017/v0/src'
+[WARN] Invalid argument to -I; path does not exist: '/merlin_fs/merlin1/hdd1/pengzh/test/github/Merlin_Compiler/trunk/set_env/../mars-gen/lib/merlin'
+mars_opt_org: /curr/youxiang/mars_project/rose_trunk/rose/src/frontend/SageIII/sageInterface/sageBuilder.C:1598: SgTypedefDeclaration* SageBuilder::buildTypedefDeclaration_nfi(const string&, SgType*, SgScopeStatement*, bool): Assertion `scope!=__null' failed.
+Print backtrace: 
+mars_opt_org[0xb43c2a]
+/lib64/libc.so.6[0x3346832510]
+/lib64/libc.so.6(gsignal+0x35)[0x3346832495]
+/lib64/libc.so.6(abort+0x175)[0x3346833c75]
+/lib64/libc.so.6[0x334682b60e]
+/lib64/libc.so.6(__assert_perror_fail+0x0)[0x334682b6d0]
+/usr/local/cs133/FCS/Merlin_Compiler_2017.1/set_env/../source-opt/lib/rose-0.9.6a-28564-nov2016_r1_20170215/lib/librose.so.0(_ZN11SageBuilder27buildTypedefDeclaration_nfiERKSsP6SgTypeP16SgScopeStatementb+0x260)[0x7f971e5cd870]
+/usr/local/cs133/FCS/Merlin_Compiler_2017.1/set_env/../source-opt/lib/rose-0.9.6a-28564-nov2016_r1_20170215/lib/librose.so.0(_ZN11SageBuilder23buildTypedefDeclarationERKSsP6SgTypeP16SgScopeStatementb+0x9)[0x7f971e5cd9d9]
+mars_opt_org(_ZN12CSageCodeGen12RegisterTypeESsPv+0x16c)[0xa86fe6]
+mars_opt_org(_ZN12CSageCodeGen16InitBuiltinTypesEv+0x9b2)[0xa85894]
+mars_opt_org(_Z11extract_topRSt6vectorISsSaISsEESsSs13CInputOptions+0x173)[0xb31478]
+mars_opt_org(main+0x108f)[0xb44ce7]
+/lib64/libc.so.6(__libc_start_main+0xfd)[0x334681ed1d]
+mars_opt_org[0x798289]
