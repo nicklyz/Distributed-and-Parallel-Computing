@@ -19,6 +19,8 @@ void LoadData(float Cin[NUM][INIMROW_A][INIMROW_A], float weight[NUM][NUM][KERNE
 	FILE *fw, *fb, *fi;
 	fw = fopen("/u/cs/class/cs133/cs133ta/release/big/weight.bin", "rb");
 	fb = fopen("/u/cs/class/cs133/cs133ta/release/big/bias.bin", "rb");
+	// fw = fopen("/u/cs/class/cs133/cs133ta/release/small/weight.bin", "rb");
+	// fb = fopen("/u/cs/class/cs133/cs133ta/release/small/bias.bin", "rb");
 	float* t_bias = (float *)malloc(sizeof(float) * NUM);
 	float* t_wght = (float *)malloc(sizeof(float) * NUM * NUM * KERNEL * KERNEL);
 	fread(t_wght, NUM * NUM * KERNEL * KERNEL, sizeof(float), fw);
@@ -41,6 +43,7 @@ void LoadData(float Cin[NUM][INIMROW_A][INIMROW_A], float weight[NUM][NUM][KERNE
 
 	float* t_in = (float *)malloc(sizeof(float) * NUM * INIMROW * INIMROW);
 	fi = fopen("/u/cs/class/cs133/cs133ta/release/big/input.bin", "rb");
+	// fi = fopen("/u/cs/class/cs133/cs133ta/release/small/input.bin", "rb");
 	fread(t_in, NUM * INIMROW * INIMROW, sizeof(float), fi);
 	for(int i = 0; i < NUM; i++) {
 		for(int j = 0; j < INIMROW; j++) {
@@ -57,6 +60,7 @@ int Verify(float Cout[NUM][OUTIMROW][OUTIMROW])
 {
 	FILE *fo;
 	fo = fopen("/u/cs/class/cs133/cs133ta/release/big/output.bin", "rb");
+	// fo = fopen("/u/cs/class/cs133/cs133ta/release/small/output.bin", "rb");
 	float* t_out = (float *)malloc(sizeof(float) * NUM * OUTIMROW * OUTIMROW);
 	fread(t_out, NUM * OUTIMROW * OUTIMROW, sizeof(float), fo);
 

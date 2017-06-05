@@ -3,8 +3,9 @@
 #include "cnn.h"
 
 #define TSJ 16
-#define TSH 4
-#define TSW 4
+#define TSH 16
+#define TSW 16
+#define TS 16
 
 // Sequential CNN implementation
 #pragma ACCEL kernel
@@ -12,10 +13,11 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW_A][INIMROW
     float weight[NUM][NUM][KERNEL][KERNEL], float bias[NUM])
 {
 
-  int i,p, q;
+  int i, p, q;
   int j, h, w;
-  int jj, hh, ww;
-  int j0, h0, w0;
+  int i0, j0, h0, w0;
+  int ii, jj, hh, ww;
+
   for(i = 0; i < NUM; i++) {
 
     static float C_tmp[INIMROW_A][INIMROW_A];
@@ -32,29 +34,27 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW_A][INIMROW
       fflush(stdout);
     }
 #endif
-    for(j0 = 0; j0 < NUM / TSJ; j0++) {
-// #pragma ACCEL pipeline
+
+    for(j = 0; j < NUM; j++) {
+#pragma ACCEL pipeline
       for(h0 = 0; h0 < IMROW/TSH; h0++) {
         for(w0 = 0; w0 < IMROW/TSW; w0++) {
-#pragma ACCEL pipeline
-	  for(hh = 0; hh < TSH; hh++) {
-	    for(ww = 0; ww < TSW; ww++) {
-		h = h0 * TSH + hh;
-		w = w0 * TSW + ww;
-		float sum = 0;
 #pragma ACCEL parallel flatten
+	    for(hh = 0; hh < TSH; hh++) {
+	      for(ww = 0; ww < TSW; ww++) {
+		w = w0 * TS + ww;
+		h = h0 * TS + hh;
+	  	float acc = 0;
+// #pragma ACCEL parallel flatten
 		for(p = 0; p < KERNEL; p++) {
           	  for(q = 0; q < KERNEL; q++) {
-	  	    for(jj = 0; jj < TSJ; jj++) {
-			j = j0 * TSJ + jj;
-        	        sum += weight[i][j][p][q] * Cin[j][h + p][w + q];
-		      }
-		    }
-        	  }
-	  	C_tmp[h][w] += sum;
-	    }
-	  }
-        }
+          	    acc += weight[i][j][p][q] * Cin[j][h + p][w + q];
+          	  }
+          	}
+	  	C_tmp[h][w] += acc;
+	      }
+	    }	
+	}
       }
     }
 
