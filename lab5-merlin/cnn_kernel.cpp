@@ -2,8 +2,8 @@
 #include <math.h>
 #include "cnn.h"
 
-#define TSI 16
-#define TSJ 16
+#define TSI 2
+#define TSJ 2
 #define TSH 4
 #define TSW 4
 
@@ -43,31 +43,37 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW_A][INIMROW
                 for (j0 = 0; j0 < NUM / TSJ; j0++) {
                     // load weights
                     float w_tmp[TSI][TSJ][KERNEL][KERNEL];
+#pragma ACCEL pipeline flatten
                     for (ii = 0; ii < TSI; ii++) {
                         i = i0 * TSI + ii;
-                        for (jj = 0; jj < TSJ; jj++) {
+			for (jj = 0; jj < TSJ; jj++) {
                             j = j0 * TSJ + jj;
-                            for (p = 0; p < KERNE; p++) {
+                            for (p = 0; p < KERNEL; p++) {
                                 for (q = 0; q < KERNEL; q++) {
                                     w_tmp[ii][jj][p][q] = weight[i][j][p][q];
                     }}}}
+
                     // load input feature maps
                     float Cin_tmp[TSJ][TSH+KERNEL-1][TSW+KERNEL-1];
+#pragma ACCEL pipeline flatten
                     for (jj = 0; jj < TSJ; jj++) {
                         j = j0 * TSJ + jj;
                         for (hh = 0; hh < TSH+KERNEL-1; hh++) {
+			    h = h0 * TSH + hh;
                             for (ww = 0; ww < TSH+KERNEL-1; ww++) {
-                                Cin_tmp[jj][hh][ww] = Cin[j][hh][ww];
+				w = w0 * TSW + ww;
+                                Cin_tmp[jj][hh][ww] = Cin[j][h][w];
                     }}}
 
                     // on-chip data computation
                     for (p = 0; p < KERNEL; p++) {
                         for (q = 0; q < KERNEL; q++) {
                             for (hh = 0; hh < TSH; hh++) {
-                                for (ww = 0; ww < TSW; ww++) {
-                                    for (ii = 0; ii < TSI; ii++) {
+#pragma ACCEL pipeline flatten
+				for (ww = 0; ww < TSW; ww++) {
+				    for (ii = 0; ii < TSI; ii++) {
                                         for (jj = 0; jj < TSJ; jj++) {
-                                            C_tmp[ii][hh][ww] += w_tmp[ii][jj] *
+                                            C_tmp[ii][hh][ww] += w_tmp[ii][jj][p][q] *
                                                 Cin_tmp[jj][hh+p][ww+q];
                     }}}}}}
                 }
@@ -80,13 +86,16 @@ void conv(float Cout[NUM][OUTIMROW][OUTIMROW], float Cin[NUM][INIMROW_A][INIMROW
 
                 // Max pooling
                 for (ii = 0; ii < TSI; ii++) {
+		    i = i0 * TSI + ii;
                     for (hh = 0; hh < TSH; hh+=2) {
+			h = h0 * TSH + hh;
                         for (ww = 0; ww < TSW; ww+=2) {
-                            float local_max = C_tmp[hh][ww];
-                            local_max = fmax(local_max, C_tmp[hh + 1][ww]);
-                            local_max = fmax(local_max, C_tmp[hh + 1][ww + 1]);
-                            local_max = fmax(local_max, C_tmp[hh][ww + 1]);
-                            Cout[i][hh/2][ww/2] = local_max;
+			    w = w0 * TSW + ww;
+                            float local_max = C_tmp[ii][hh][ww];
+                            local_max = fmax(local_max, C_tmp[ii][hh + 1][ww]);
+                            local_max = fmax(local_max, C_tmp[ii][hh + 1][ww + 1]);
+                            local_max = fmax(local_max, C_tmp[ii][hh][ww + 1]);
+                            Cout[i][h/2][w/2] = local_max;
                 }}}
                 // store output feature maps
     }}}
