@@ -23,6 +23,7 @@ int main()
 	// OpenCL host program
 	fprintf(stderr, "Start cnn computation\n");
 	struct timeval t1, t2;
+	struct timeval t3, t4;
 	gettimeofday(&t1, NULL);
 	// --- Please add your code below ---
 	// load bias
@@ -32,9 +33,9 @@ int main()
         			C_tmp[i][h][w] = bias[i];
 		}
     	}
-
+	gettimeofday(&t3, NULL);
 	conv(C_tmp, Cin, weight);
-
+	gettimeofday(&t4, NULL);
 	// max pooling
 	for (i = 0; i < NUM; i++) { 
 		for (h = 0; h < OUTIMROW; h++) {
@@ -49,8 +50,14 @@ int main()
     	}
 
 	gettimeofday(&t2, NULL);
+	float elapsed_time1 = (t3.tv_sec - t1.tv_sec) + (t3.tv_usec - t1.tv_usec) / 1e6;
+	float elapsed_time2 = (t4.tv_sec - t3.tv_sec) + (t4.tv_usec - t3.tv_usec) / 1e6;
+	float elapsed_time3 = (t2.tv_sec - t4.tv_sec) + (t2.tv_usec - t4.tv_usec) / 1e6;	
 	float elapsed_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1e6;
-	fprintf(stderr, "time(s): %f\n", elapsed_time);
+	fprintf(stderr, "Load bias time(s): %f\n", elapsed_time1);
+	fprintf(stderr, "Convolution time(s): %f\n", elapsed_time2);
+	fprintf(stderr, "Max pooling time(s): %f\n", elapsed_time3);
+	fprintf(stderr, "Total time(s): %f\n", elapsed_time);
 	fprintf(stderr, "GOPs: %f\n", (float)NUM * NUM * IMROW * IMROW * KERNEL * KERNEL * 2 / elapsed_time / 1e9);
 
 	int error = Verify(Cout);
